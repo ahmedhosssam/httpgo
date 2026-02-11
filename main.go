@@ -9,15 +9,15 @@ import (
 )
 
 type HTTPReq struct {
-	method          string
-	path            string
-	http_version    string
-	host            string
-	user_agent      string
-	accept_encoding string
+	method         string
+	path           string
+	httpVersion    string
+	host           string
+	userAgent      string
+	acceptEncoding string
 }
 
-func parse_http_request(req string) HTTPReq {
+func parseHTTPRequest(req string) HTTPReq {
 	lines := strings.Split(req, "\n")
 
 	if len(lines) != 8 {
@@ -26,15 +26,15 @@ func parse_http_request(req string) HTTPReq {
 
 	var httpreq HTTPReq
 
-	first_line := strings.Split(lines[0], " ")
+	firstLine := strings.Split(lines[0], " ")
 
-	if len(first_line) != 3 {
+	if len(firstLine) != 3 {
 		panic("INVALID HEADER")
 	}
 
-	method := first_line[0]
-	path := first_line[1]
-	http_version := first_line[2]
+	method := firstLine[0]
+	path := firstLine[1]
+	httpVersion := firstLine[2]
 
 	if method != "GET" && method != "POST" {
 		panic("INVALID METHOD: " + method)
@@ -42,38 +42,38 @@ func parse_http_request(req string) HTTPReq {
 
 	httpreq.method = method
 	httpreq.path = path
-	httpreq.http_version = http_version
+	httpreq.httpVersion = httpVersion
 
-	second_line := strings.Split(lines[1], " ")
+	secondLine := strings.Split(lines[1], " ")
 
-	if len(second_line) != 2 {
+	if len(secondLine) != 2 {
 		panic("INVALID HEADER")
 	}
 
-	if second_line[0] != "Host:" {
+	if secondLine[0] != "Host:" {
 		panic("INVALID HEADER")
 	}
 
-	httpreq.host = second_line[1]
+	httpreq.host = secondLine[1]
 
-	third_line := strings.Split(lines[2], " ")
+	thirdLine := strings.Split(lines[2], " ")
 
-	if third_line[0] != "User-Agent:" {
+	if thirdLine[0] != "User-Agent:" {
 		panic("INVALID HEADER")
 	}
 
-	httpreq.user_agent = third_line[1]
+	httpreq.userAgent = thirdLine[1]
 
-	forth_line := strings.Split(lines[3], " ")
+	forthLine := strings.Split(lines[3], " ")
 
-	if forth_line[0] != "Accept-Encoding:" {
+	if forthLine[0] != "Accept-Encoding:" {
 		panic("INVALID HEADER")
 	}
 
-	httpreq.accept_encoding = forth_line[1]
+	httpreq.acceptEncoding = forthLine[1]
 
 	log.Printf("\n\n\nParsed HTTP Request - Method: %s\nPath: %s\nVersion: %s\nHost: %s\nUser-Agent: %s\nAccept-Encoding: %s\n\n\n",
-		httpreq.method, httpreq.path, httpreq.http_version, httpreq.host, httpreq.user_agent, httpreq.accept_encoding)
+		httpreq.method, httpreq.path, httpreq.httpVersion, httpreq.host, httpreq.userAgent, httpreq.acceptEncoding)
 
 	return httpreq
 }
@@ -92,11 +92,11 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		go handle_tcp_connection(c)
+		go handleTCPConnection(c)
 	}
 }
 
-func handle_tcp_connection(c net.Conn) {
+func handleTCPConnection(c net.Conn) {
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
 	packet := make([]byte, 4096)
 	tmp := make([]byte, 4096)
@@ -105,7 +105,7 @@ func handle_tcp_connection(c net.Conn) {
 		_, err := c.Read(tmp)
 		req := string(tmp)
 		if strings.Contains(req, "HTTP") {
-			httpreq := parse_http_request(string(tmp))
+			httpreq := parseHTTPRequest(string(tmp))
 			fmt.Println(httpreq)
 			response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 13\r\nConnection: keep-alive\r\n\r\nHello, World!\r\n\r\n")
 			c.Write([]byte(response))
