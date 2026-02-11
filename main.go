@@ -20,12 +20,9 @@ type HTTPReq struct {
 func parseHTTPRequest(req string) HTTPReq {
 	lines := strings.Split(req, "\n")
 
-	if len(lines) != 8 {
-		panic("INVALID REQUEST")
-	}
-
 	var httpreq HTTPReq
 
+	// Example of first line: "GET /api/data HTTP/1.1"
 	firstLine := strings.Split(lines[0], " ")
 
 	if len(firstLine) != 3 {
@@ -44,35 +41,27 @@ func parseHTTPRequest(req string) HTTPReq {
 	httpreq.path = path
 	httpreq.httpVersion = httpVersion
 
-	secondLine := strings.Split(lines[1], " ")
+	for i := range len(lines) {
+		if i == 0 {
+			continue
+		}
 
-	if len(secondLine) != 2 {
-		panic("INVALID HEADER")
+		parts := strings.Split(lines[i], ": ")
+
+		if parts[0] == "User-Agent" {
+			httpreq.userAgent = parts[1]
+		}
+
+		if parts[0] == "Host" {
+			httpreq.host = parts[1]
+		}
+
+		if parts[0] == "Accept-Encoding:" {
+			httpreq.acceptEncoding = parts[1]
+		}
 	}
 
-	if secondLine[0] != "Host:" {
-		panic("INVALID HEADER")
-	}
-
-	httpreq.host = secondLine[1]
-
-	thirdLine := strings.Split(lines[2], " ")
-
-	if thirdLine[0] != "User-Agent:" {
-		panic("INVALID HEADER")
-	}
-
-	httpreq.userAgent = thirdLine[1]
-
-	forthLine := strings.Split(lines[3], " ")
-
-	if forthLine[0] != "Accept-Encoding:" {
-		panic("INVALID HEADER")
-	}
-
-	httpreq.acceptEncoding = forthLine[1]
-
-	log.Printf("\n\n\nParsed HTTP Request - Method: %s\nPath: %s\nVersion: %s\nHost: %s\nUser-Agent: %s\nAccept-Encoding: %s\n\n\n",
+	log.Printf("\n\n\nParsed HTTP Request:\n---\nMethod: %s\nPath: %s\nVersion: %s\nHost: %s\nUser-Agent: %s\nAccept-Encoding: %s\n---\n",
 		httpreq.method, httpreq.path, httpreq.httpVersion, httpreq.host, httpreq.userAgent, httpreq.acceptEncoding)
 
 	return httpreq
@@ -105,8 +94,7 @@ func handleTCPConnection(c net.Conn) {
 		_, err := c.Read(tmp)
 		req := string(tmp)
 		if strings.Contains(req, "HTTP") {
-			httpreq := parseHTTPRequest(string(tmp))
-			fmt.Println(httpreq)
+			parseHTTPRequest(string(tmp))
 			response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 13\r\nConnection: keep-alive\r\n\r\nHello, World!\r\n\r\n")
 			c.Write([]byte(response))
 		}
