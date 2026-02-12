@@ -41,10 +41,6 @@ func parseHTTPRequest(req string) HTTPRequest {
 	path := firstLine[1]
 	httpVersion := firstLine[2]
 
-	if method != "GET" && method != "POST" {
-		panic("INVALID METHOD: " + method)
-	}
-
 	httpReq.method = method
 	httpReq.path = path[1:] // To remove the / in the beginning
 	httpReq.httpVersion = httpVersion
@@ -93,6 +89,17 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 	method := httpReq.method
 	path := httpReq.path
 
+	if method != "GET" && method != "POST" {
+		httpRes.httpVersion = "HTTP/1.1"
+		httpRes.statusCode = "400 "
+		httpRes.reasonPhrase = "Bad Request"
+		httpRes.headers["Content-Type"] = "text/html"
+		// TODO: Body should be like:
+		// {
+		//   "error": "Bad Request"
+		// }
+	}
+
 	if method == "GET" {
 		// go get the content in the given path and put it in httpRes.body
 		data, err := os.ReadFile(path)
@@ -112,7 +119,7 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 	return httpRes
 }
 
-// HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 13\r\nConnection: keep-alive\r\n\r\nHello Vietnaaaaam\r\n\r\n
+// HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 18\r\nConnection: keep-alive\r\n\r\nHello Vietnaaaaam\r\n\r\n
 
 func getRawHTTPResponse(httpRes HTTPResponse) string {
 	var rawResponse string
