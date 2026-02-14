@@ -113,7 +113,7 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 	}
 
 	if method == "POST" {
-		// go get the content in the given path and put it in httpRes.body
+		// TODO: Put the given body in the given path
 		contentLength := 0
 		httpRes.httpVersion = "HTTP/1.1"
 		httpRes.statusCode = "200"
