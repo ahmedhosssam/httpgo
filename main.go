@@ -52,6 +52,11 @@ func parseHTTPRequest(req string) HTTPRequest {
 			continue
 		}
 
+		if httpReq.method == "POST" && i == len(lines)-1 {
+			httpReq.headers["Body"] = lines[i]
+			continue
+		}
+
 		parts := strings.Split(lines[i], ": ")
 
 		if len(parts) < 2 {
@@ -69,14 +74,14 @@ func parseHTTPRequest(req string) HTTPRequest {
 			"Version: %s\n"+
 			"Host: %s\n"+
 			"User-Agent: %s\n"+
-			"Accept-Encoding: %s\n"+
+			"Body: %s\n"+
 			"---\n",
 		httpReq.method,
 		httpReq.path,
 		httpReq.httpVersion,
 		httpReq.headers["Host"],
 		httpReq.headers["User-Agent"],
-		httpReq.headers["Accept-Encoding"],
+		httpReq.headers["Body"],
 	)
 
 	return httpReq
@@ -88,17 +93,7 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 
 	method := httpReq.method
 	path := httpReq.path
-	bad_request_body := `{"error":"Bad Request"}`
-
-	if method != "GET" && method != "POST" {
-		httpRes.httpVersion = "HTTP/1.1"
-		httpRes.statusCode = "400"
-		httpRes.reasonPhrase = "Bad Request"
-		httpRes.headers["Content-Type"] = "application/json"
-		httpRes.headers["Content-Length"] = strconv.Itoa((len(bad_request_body)))
-		httpRes.body = bad_request_body
-		return httpRes
-	}
+	badRequestBody := `{"error":"Bad Request"}`
 
 	if method == "GET" {
 		// go get the content in the given path and put it in httpRes.body
@@ -114,8 +109,27 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 		httpRes.headers["Content-Type"] = "text/html"
 		httpRes.headers["Content-Length"] = strconv.Itoa(len(string(data)))
 		httpRes.headers["Connection"] = "keep-alive"
+		return httpRes
 	}
 
+	if method == "POST" {
+		// go get the content in the given path and put it in httpRes.body
+		contentLength := 0
+		httpRes.httpVersion = "HTTP/1.1"
+		httpRes.statusCode = "200"
+		httpRes.reasonPhrase = "OK"
+		httpRes.headers["Content-Length"] = strconv.Itoa(contentLength)
+		httpRes.headers["Connection"] = "keep-alive"
+		return httpRes
+	}
+
+	// Return Bad Request
+	httpRes.httpVersion = "HTTP/1.1"
+	httpRes.statusCode = "400"
+	httpRes.reasonPhrase = "Bad Request"
+	httpRes.headers["Content-Type"] = "application/json"
+	httpRes.headers["Content-Length"] = strconv.Itoa((len(badRequestBody)))
+	httpRes.body = badRequestBody
 	return httpRes
 }
 
