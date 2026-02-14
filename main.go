@@ -88,16 +88,16 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 
 	method := httpReq.method
 	path := httpReq.path
+	bad_request_body := `{"error":"Bad Request"}`
 
 	if method != "GET" && method != "POST" {
 		httpRes.httpVersion = "HTTP/1.1"
-		httpRes.statusCode = "400 "
+		httpRes.statusCode = "400"
 		httpRes.reasonPhrase = "Bad Request"
-		httpRes.headers["Content-Type"] = "text/html"
-		// TODO: Body should be like:
-		// {
-		//   "error": "Bad Request"
-		// }
+		httpRes.headers["Content-Type"] = "application/json"
+		httpRes.headers["Content-Length"] = strconv.Itoa((len(bad_request_body)))
+		httpRes.body = bad_request_body
+		return httpRes
 	}
 
 	if method == "GET" {
