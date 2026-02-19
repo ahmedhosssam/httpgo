@@ -67,11 +67,12 @@ func parseHTTPRequest(req string) HTTPRequest {
 	}
 
 	log.Printf(
-		"\n\n\nParsed HTTP Request:\n"+
+		"\nParsed HTTP Request:\n"+
 			"---\n"+
 			"Method: %s\n"+
 			"Path: %s\n"+
 			"Version: %s\n"+
+			"Content-Type: %s\n"+
 			"Host: %s\n"+
 			"User-Agent: %s\n"+
 			"Body: %s\n"+
@@ -79,6 +80,7 @@ func parseHTTPRequest(req string) HTTPRequest {
 		httpReq.method,
 		httpReq.path,
 		httpReq.httpVersion,
+		httpReq.headers["Content-Type"],
 		httpReq.headers["Host"],
 		httpReq.headers["User-Agent"],
 		httpReq.headers["Body"],
@@ -114,6 +116,14 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 
 	if method == "POST" {
 		// TODO: Put the given body in the given path
+		f, err := os.Create(httpReq.path)
+		if err != nil {
+			fmt.Println("Error: ", err)
+		}
+		defer f.Close()
+
+		f.WriteString(httpReq.headers["Body"])
+
 		contentLength := 0
 		httpRes.httpVersion = "HTTP/1.1"
 		httpRes.statusCode = "200"
@@ -152,7 +162,6 @@ func getRawHTTPResponse(httpRes HTTPResponse) string {
 	rawResponse += "\r\n"
 	rawResponse += httpRes.body
 
-	fmt.Println(rawResponse)
 	return rawResponse
 }
 
@@ -167,7 +176,6 @@ func handleTCPConnection(c net.Conn) {
 			httpReq := parseHTTPRequest(string(tmp))
 			httpRes := getHTTPResponse(httpReq)
 			httpResRaw := getRawHTTPResponse(httpRes)
-			fmt.Println(httpResRaw)
 			response := fmt.Sprintf(httpResRaw)
 			c.Write([]byte(response))
 		}
@@ -182,8 +190,10 @@ func handleTCPConnection(c net.Conn) {
 }
 
 func main() {
-	PORT := "localhost:6969"
-	l, err := net.Listen("tcp4", PORT)
+	addr := "localhost:6969"
+	fmt.Printf("Listening on %s\n", addr)
+
+	l, err := net.Listen("tcp4", addr)
 	if err != nil {
 		log.Fatal(err)
 	}
