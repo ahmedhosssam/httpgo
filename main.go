@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -115,14 +116,24 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 	}
 
 	if method == "POST" {
-		// TODO: Put the given body in the given path
-		f, err := os.Create(httpReq.path)
+		file, err := os.Create(httpReq.path)
 		if err != nil {
 			fmt.Println("Error: ", err)
 		}
-		defer f.Close()
+		defer file.Close()
 
-		f.WriteString(httpReq.headers["Body"])
+		body := strings.NewReplacer("\x00", "").Replace(httpReq.headers["Body"])
+
+		var result map[string]string
+		err = json.Unmarshal([]byte(body), &result)
+		if err != nil {
+			panic(err)
+		}
+		encoder := json.NewEncoder(file)
+		err = encoder.Encode(result)
+		if err != nil {
+			panic(err)
+		}
 
 		contentLength := 0
 		httpRes.httpVersion = "HTTP/1.1"
