@@ -100,6 +100,20 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 
 	if method == "GET" {
 		// go get the content in the given path and put it in httpRes.body
+		_, err := os.Stat(path)
+		if os.IsNotExist(err) {
+			// handle the response
+			notFoundHTML := "<h1>404 Not Found</h1>"
+			httpRes.body = string(notFoundHTML)
+			httpRes.httpVersion = "HTTP/1.1"
+			httpRes.statusCode = "404"
+			httpRes.reasonPhrase = "Not Found"
+			httpRes.headers["Content-Type"] = "text/html"
+			httpRes.headers["Content-Length"] = strconv.Itoa(len(string(notFoundHTML)))
+			httpRes.headers["Connection"] = "keep-alive"
+			return httpRes
+		}
+
 		data, err := os.ReadFile(path)
 		if err != nil {
 			fmt.Println("Error: ", err)
@@ -124,7 +138,7 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 
 		body := strings.NewReplacer("\x00", "").Replace(httpReq.headers["Body"])
 
-		var result map[string]string
+		var result map[string]interface{}
 		err = json.Unmarshal([]byte(body), &result)
 		if err != nil {
 			panic(err)
