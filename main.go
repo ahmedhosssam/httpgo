@@ -90,7 +90,7 @@ func parseHTTPRequest(req string) HTTPRequest {
 	return httpReq
 }
 
-func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
+func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 	var httpRes HTTPResponse
 	httpRes.headers = make(map[string]string)
 
@@ -199,7 +199,7 @@ func handleTCPConnection(c net.Conn) {
 		req := string(tmp)
 		if strings.Contains(req, "HTTP") {
 			httpReq := parseHTTPRequest(string(tmp))
-			httpRes := getHTTPResponse(httpReq)
+			httpRes := handleHTTPRequest(httpReq)
 			httpResRaw := getRawHTTPResponse(httpRes)
 			response := fmt.Sprintf(httpResRaw)
 			c.Write([]byte(response))
