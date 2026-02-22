@@ -138,7 +138,7 @@ func getHTTPResponse(httpReq HTTPRequest) HTTPResponse {
 
 		body := strings.NewReplacer("\x00", "").Replace(httpReq.headers["Body"])
 
-		var result map[string]interface{}
+		var result map[string]any
 		err = json.Unmarshal([]byte(body), &result)
 		if err != nil {
 			panic(err)
