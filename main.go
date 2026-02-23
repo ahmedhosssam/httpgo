@@ -61,7 +61,7 @@ func parseHTTPRequest(req string) HTTPRequest {
 	firstLine := strings.Split(lines[0], " ")
 
 	if len(firstLine) != 3 {
-		panic("INVALID HEADER")
+		fmt.Println("INVALID HEADER")
 	}
 
 	method := firstLine[0]
@@ -171,12 +171,12 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 		var result map[string]any
 		err = json.Unmarshal([]byte(body), &result)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 		encoder := json.NewEncoder(file)
 		err = encoder.Encode(result)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 
 		contentLength := 0
