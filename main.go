@@ -26,6 +26,31 @@ type HTTPResponse struct {
 	body         string
 }
 
+func getPathAndParams(line string) (string, map[string]string) {
+	var path string
+	params := make(map[string]string)
+
+	line = line[1:] // To remove the / in the beginning
+
+	// If it doesn't contain any params, then path = line
+	if !strings.Contains(line, "?") {
+		path = line
+		return path, params
+	}
+
+	path = strings.Split(line, "?")[0]
+	paramsStr := strings.Split(line, "?")[1]
+	paramsArr := strings.Split(paramsStr, "&")
+
+	for _, param := range paramsArr {
+		paramKey := strings.Split(param, "=")[0]
+		paramValue := strings.Split(param, "=")[1]
+		params[paramKey] = paramValue
+	}
+
+	return path, params
+}
+
 func parseHTTPRequest(req string) HTTPRequest {
 	lines := strings.Split(req, "\n")
 
@@ -39,11 +64,16 @@ func parseHTTPRequest(req string) HTTPRequest {
 	}
 
 	method := firstLine[0]
-	path := firstLine[1]
+	path, params := getPathAndParams(firstLine[1])
+
+	if len(params) > 0 {
+		fmt.Println(params)
+	}
+
 	httpVersion := firstLine[2]
 
 	httpReq.method = method
-	httpReq.path = path[1:] // To remove the / in the beginning
+	httpReq.path = path
 	httpReq.httpVersion = httpVersion
 
 	httpReq.headers = make(map[string]string)
