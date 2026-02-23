@@ -255,11 +255,11 @@ func main() {
 	defer l.Close()
 
 	for {
-		c, err := l.Accept()
+		connection, err := l.Accept()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		go handleTCPConnection(c)
+		go handleTCPConnection(connection)
 	}
 }
