@@ -15,6 +15,7 @@ type HTTPRequest struct {
 	method      string
 	path        string
 	httpVersion string
+	params      map[string]string
 	headers     map[string]string
 }
 
@@ -66,9 +67,7 @@ func parseHTTPRequest(req string) HTTPRequest {
 	method := firstLine[0]
 	path, params := getPathAndParams(firstLine[1])
 
-	if len(params) > 0 {
-		fmt.Println(params)
-	}
+	httpReq.params = params
 
 	httpVersion := firstLine[2]
 
@@ -130,7 +129,8 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 
 	if method == "GET" {
 		// go get the content in the given path and put it in httpRes.body
-		_, err := os.Stat(path)
+		filePath := strings.Split(path, ".json")[0] + ".json"
+		_, err := os.Stat(filePath)
 		if os.IsNotExist(err) {
 			// handle the response
 			notFoundHTML := "<h1>404 Not Found</h1>"
@@ -144,7 +144,7 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 			return httpRes
 		}
 
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(filePath)
 		if err != nil {
 			fmt.Println("Error: ", err)
 		}
@@ -153,7 +153,7 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 		httpRes.httpVersion = "HTTP/1.1"
 		httpRes.statusCode = "200"
 		httpRes.reasonPhrase = "OK"
-		httpRes.headers["Content-Type"] = "text/html"
+		httpRes.headers["Content-Type"] = "application/json"
 		httpRes.headers["Content-Length"] = strconv.Itoa(len(string(data)))
 		httpRes.headers["Connection"] = "keep-alive"
 		return httpRes
