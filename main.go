@@ -173,12 +173,10 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 						newBody += fmt.Sprintf(`"%s": "%s"`, key, v)
 					case float64:
 						// NOTE: All JSON numbers in go become float64
-						newBody += fmt.Sprintf(`"%s": "%s"`, key, strconv.Itoa(int(v)))
+						newBody += fmt.Sprintf(`"%s": "%s",`, key, strconv.Itoa(int(v)))
 					default:
 						fmt.Printf("unknown type: %T\n", v)
 					}
-
-					newBody += ","
 				}
 
 				newBody = newBody[:len(newBody)-1] + "}\n"
@@ -240,21 +238,13 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 // HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 18\r\nConnection: keep-alive\r\n\r\nHello Vietnaaaaam\r\n\r\n
 
 func getRawHTTPResponse(httpRes HTTPResponse) string {
-	var rawResponse string
-
-	rawResponse += httpRes.httpVersion
-	rawResponse += " "
-	rawResponse += httpRes.statusCode
-	rawResponse += " "
-	rawResponse += httpRes.reasonPhrase
-	rawResponse += "\r\n"
+	rawResponse := fmt.Sprintf("%s %s %s\r\n", httpRes.httpVersion, httpRes.statusCode, httpRes.reasonPhrase)
 
 	for key, value := range httpRes.headers {
-		rawResponse += key + ": " + value + "\r\n"
+		rawResponse += fmt.Sprintf("%s: %s\r\n", key, value)
 	}
 
-	rawResponse += "\r\n"
-	rawResponse += httpRes.body
+	rawResponse += fmt.Sprintf("\r\n%s", httpRes.body)
 
 	return rawResponse
 }
