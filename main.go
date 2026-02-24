@@ -162,22 +162,26 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 					fmt.Println("Error: ", err)
 				}
 
+				// TODO: Send an "Invalid Request" reponse if the id is bigger than the length of the array
 				entry := result["pages"][id-1]
 
 				newBody := "{"
 
 				for key, value := range entry {
-					valueStr, strOk := value.(string)
-					valueInt, _ := value.(int)
-					if strOk {
-						newBody += fmt.Sprintf(`"%s": "%s"`, key, valueStr)
-					} else {
-						newBody += fmt.Sprintf(`"%s": "%s"`, key, string(valueInt))
+					switch v := value.(type) {
+					case string:
+						newBody += fmt.Sprintf(`"%s": "%s"`, key, v)
+					case float64:
+						// NOTE: All JSON numbers in go become float64
+						newBody += fmt.Sprintf(`"%s": "%s"`, key, strconv.Itoa(int(v)))
+					default:
+						fmt.Printf("unknown type: %T\n", v)
 					}
+
 					newBody += ","
 				}
 
-				newBody = newBody[:len(newBody)-1] + "}"
+				newBody = newBody[:len(newBody)-1] + "}\n"
 
 				fmt.Println(newBody)
 				body = newBody
