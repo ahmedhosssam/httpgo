@@ -149,12 +149,47 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 			fmt.Println("Error: ", err)
 		}
 
-		httpRes.body = string(data)
+		body := string(data)
+
+		if len(httpReq.params) > 0 {
+			var result map[string][]map[string]any
+			json.Unmarshal(data, &result)
+
+			if _, pageExist := httpReq.params["page"]; pageExist {
+				idStr := httpReq.params["page"]
+				id, err := strconv.Atoi(idStr)
+				if err != nil {
+					fmt.Println("Error: ", err)
+				}
+
+				entry := result["pages"][id-1]
+
+				newBody := "{"
+
+				for key, value := range entry {
+					valueStr, strOk := value.(string)
+					valueInt, _ := value.(int)
+					if strOk {
+						newBody += fmt.Sprintf(`"%s": "%s"`, key, valueStr)
+					} else {
+						newBody += fmt.Sprintf(`"%s": "%s"`, key, string(valueInt))
+					}
+					newBody += ","
+				}
+
+				newBody = newBody[:len(newBody)-1] + "}"
+
+				fmt.Println(newBody)
+				body = newBody
+			}
+		}
+
+		httpRes.body = body
 		httpRes.httpVersion = "HTTP/1.1"
 		httpRes.statusCode = "200"
 		httpRes.reasonPhrase = "OK"
 		httpRes.headers["Content-Type"] = "application/json"
-		httpRes.headers["Content-Length"] = strconv.Itoa(len(string(data)))
+		httpRes.headers["Content-Length"] = strconv.Itoa(len(string(body)))
 		httpRes.headers["Connection"] = "keep-alive"
 		return httpRes
 	}
