@@ -27,6 +27,19 @@ type HTTPResponse struct {
 	body         string
 }
 
+func getParams(line string) map[string]string {
+	params := make(map[string]string)
+	paramsArr := strings.Split(line, "&")
+
+	for _, param := range paramsArr {
+		paramKey := strings.Split(param, "=")[0]
+		paramValue := strings.Split(param, "=")[1]
+		params[paramKey] = paramValue
+	}
+
+	return params
+}
+
 func getPathAndParams(line string) (string, map[string]string) {
 	var path string
 	params := make(map[string]string)
@@ -41,13 +54,7 @@ func getPathAndParams(line string) (string, map[string]string) {
 
 	path = strings.Split(line, "?")[0]
 	paramsStr := strings.Split(line, "?")[1]
-	paramsArr := strings.Split(paramsStr, "&")
-
-	for _, param := range paramsArr {
-		paramKey := strings.Split(param, "=")[0]
-		paramValue := strings.Split(param, "=")[1]
-		params[paramKey] = paramValue
-	}
+	params = getParams(paramsStr)
 
 	return path, params
 }
@@ -197,19 +204,25 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 	}
 
 	if method == "POST" {
+		// TODO: Better file handling
 		file, err := os.Create(httpReq.path)
 		if err != nil {
 			fmt.Println("Error: ", err)
 		}
 		defer file.Close()
 
+		var result map[string]string
 		body := strings.NewReplacer("\x00", "").Replace(httpReq.headers["Body"])
 
-		var result map[string]any
-		err = json.Unmarshal([]byte(body), &result)
-		if err != nil {
-			fmt.Println(err)
+		if strings.Contains(httpReq.headers["Content-Type"], "x-www-form-urlencoded") {
+			result = getParams(body)
+		} else {
+			err = json.Unmarshal([]byte(body), &result)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
+
 		encoder := json.NewEncoder(file)
 		err = encoder.Encode(result)
 		if err != nil {
