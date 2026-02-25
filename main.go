@@ -68,7 +68,7 @@ func parseHTTPRequest(req string) HTTPRequest {
 	firstLine := strings.Split(lines[0], " ")
 
 	if len(firstLine) != 3 {
-		fmt.Println("INVALID HEADER")
+		fmt.Printf("INVALID HEADER %s\n", firstLine)
 	}
 
 	method := firstLine[0]
@@ -136,7 +136,16 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 
 	if method == "GET" {
 		// go get the content in the given path and put it in httpRes.body
-		filePath := strings.Split(path, ".json")[0] + ".json"
+		var filePath string
+		if path == "" {
+			filePath = "index.html"
+		} else if !strings.Contains(path, ".") {
+			// If the path doesn't have extension, we will treat it as json file.
+			filePath = strings.Split(path, ".json")[0] + ".json"
+		} else {
+			filePath = path
+		}
+
 		_, err := os.Stat(filePath)
 		if os.IsNotExist(err) {
 			// handle the response
