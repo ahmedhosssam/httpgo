@@ -134,18 +134,20 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 	path := httpReq.path
 	badRequestBody := `{"error":"Bad Request"}`
 
+	var filePath string
+	if path == "" {
+		filePath = "index.html"
+	} else if !strings.Contains(path, ".") {
+		// If the path doesn't have extension, we will treat it as json file.
+		filePath = strings.Split(path, ".json")[0] + ".json"
+	} else if path == "/" {
+		filePath = "index.html"
+	} else {
+		filePath = path
+	}
+
 	if method == "GET" {
 		// go get the content in the given path and put it in httpRes.body
-		var filePath string
-		if path == "" {
-			filePath = "index.html"
-		} else if !strings.Contains(path, ".") {
-			// If the path doesn't have extension, we will treat it as json file.
-			filePath = strings.Split(path, ".json")[0] + ".json"
-		} else {
-			filePath = path
-		}
-
 		_, err := os.Stat(filePath)
 		if os.IsNotExist(err) {
 			// handle the response
@@ -214,7 +216,7 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 
 	if method == "POST" {
 		// TODO: Better file handling
-		file, err := os.Create(httpReq.path)
+		file, err := os.Create(filePath)
 		if err != nil {
 			fmt.Println("Error: ", err)
 		}
@@ -299,7 +301,7 @@ func main() {
 	addr := "localhost:6969"
 	fmt.Printf("Listening on %s\n", addr)
 
-	l, err := net.Listen("tcp4", addr)
+	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatal(err)
 	}
