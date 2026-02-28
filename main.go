@@ -291,7 +291,6 @@ func handleTCPConnection(connection net.Conn) {
 	for {
 		n, err := connection.Read(buffer)
 		rawRequest := string(buffer[:n])
-		fmt.Println(rawRequest)
 		if strings.Contains(rawRequest, "HTTP") {
 			httpReq := parseHTTPRequest(rawRequest)
 			httpRes := handleHTTPRequest(httpReq)
