@@ -286,13 +286,14 @@ func getRawHTTPResponse(httpRes HTTPResponse) string {
 
 func handleTCPConnection(connection net.Conn) {
 	fmt.Printf("Serving %s\n", connection.RemoteAddr().String())
-	rawRequest := make([]byte, 4096)
+	buffer := make([]byte, 4096)
 	defer connection.Close()
 	for {
-		_, err := connection.Read(rawRequest)
-		req := string(rawRequest)
-		if strings.Contains(req, "HTTP") {
-			httpReq := parseHTTPRequest(string(rawRequest))
+		n, err := connection.Read(buffer)
+		rawRequest := string(buffer[:n])
+		fmt.Println(rawRequest)
+		if strings.Contains(rawRequest, "HTTP") {
+			httpReq := parseHTTPRequest(rawRequest)
 			httpRes := handleHTTPRequest(httpReq)
 			httpResRaw := getRawHTTPResponse(httpRes)
 			response := fmt.Sprintf(httpResRaw)
