@@ -127,9 +127,6 @@ func parseHTTPRequest(req string) HTTPRequest {
 }
 
 func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
-	var httpRes HTTPResponse
-	httpRes.headers = make(map[string]string)
-
 	method := httpReq.method
 	path := httpReq.path
 	badRequestBody := `{"error":"Bad Request"}`
@@ -152,14 +149,19 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 		if os.IsNotExist(err) {
 			// handle the response
 			notFoundHTML := "<h1>404 Not Found</h1>"
-			httpRes.body = string(notFoundHTML)
-			httpRes.httpVersion = "HTTP/1.1"
-			httpRes.statusCode = "404"
-			httpRes.reasonPhrase = "Not Found"
-			httpRes.headers["Content-Type"] = "text/html"
-			httpRes.headers["Content-Length"] = strconv.Itoa(len(string(notFoundHTML)))
-			httpRes.headers["Connection"] = "keep-alive"
-			return httpRes
+			headers := map[string]string{
+				"Content-Type":   "text/html",
+				"Content-Length": strconv.Itoa(len(string(notFoundHTML))),
+				"Connection":     "keep-alive",
+			}
+
+			return HTTPResponse{
+				httpVersion:  "HTTP/1.1",
+				statusCode:   "404",
+				reasonPhrase: "Not Found",
+				headers:      headers,
+				body:         string(notFoundHTML),
+			}
 		}
 
 		data, err := os.ReadFile(filePath)
@@ -204,14 +206,17 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 			}
 		}
 
-		httpRes.body = body
-		httpRes.httpVersion = "HTTP/1.1"
-		httpRes.statusCode = "200"
-		httpRes.reasonPhrase = "OK"
-		httpRes.headers["Content-Type"] = "application/json"
-		httpRes.headers["Content-Length"] = strconv.Itoa(len(string(body)))
-		httpRes.headers["Connection"] = "keep-alive"
-		return httpRes
+		return HTTPResponse{
+			httpVersion:  "HTTP/1.1",
+			statusCode:   "200",
+			reasonPhrase: "OK",
+			headers: map[string]string{
+				"Content-Type":   "application/json",
+				"Content-Length": strconv.Itoa(len(body)),
+				"Connection":     "keep-alive",
+			},
+			body: body,
+		}
 	}
 
 	if method == "POST" {
@@ -240,23 +245,29 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 			fmt.Println(err)
 		}
 
-		contentLength := 0
-		httpRes.httpVersion = "HTTP/1.1"
-		httpRes.statusCode = "200"
-		httpRes.reasonPhrase = "OK"
-		httpRes.headers["Content-Length"] = strconv.Itoa(contentLength)
-		httpRes.headers["Connection"] = "keep-alive"
-		return httpRes
+		return HTTPResponse{
+			httpVersion:  "HTTP/1.1",
+			statusCode:   "200",
+			reasonPhrase: "OK",
+			headers: map[string]string{
+				"Content-Length": "0",
+				"Connection":     "keep-alive",
+			},
+		}
 	}
 
 	// Return Bad Request
-	httpRes.httpVersion = "HTTP/1.1"
-	httpRes.statusCode = "400"
-	httpRes.reasonPhrase = "Bad Request"
-	httpRes.headers["Content-Type"] = "application/json"
-	httpRes.headers["Content-Length"] = strconv.Itoa((len(badRequestBody)))
-	httpRes.body = badRequestBody
-	return httpRes
+	return HTTPResponse{
+		httpVersion:  "HTTP/1.1",
+		statusCode:   "400",
+		reasonPhrase: "Bad Request",
+		headers: map[string]string{
+			"Content-Type":   "application/json",
+			"Content-Length": strconv.Itoa(len(badRequestBody)),
+			"Connection":     "keep-alive",
+		},
+		body: badRequestBody,
+	}
 }
 
 // HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 18\r\nConnection: keep-alive\r\n\r\nHello Vietnaaaaam\r\n\r\n
