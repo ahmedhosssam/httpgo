@@ -206,12 +206,17 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 			}
 		}
 
+		contentType := "application/json"
+		if strings.Contains(filePath, "html") {
+			contentType = "text/html"
+		}
+
 		return HTTPResponse{
 			httpVersion:  "HTTP/1.1",
 			statusCode:   "200",
 			reasonPhrase: "OK",
 			headers: map[string]string{
-				"Content-Type":   "application/json",
+				"Content-Type":   contentType,
 				"Content-Length": strconv.Itoa(len(body)),
 				"Connection":     "keep-alive",
 			},
