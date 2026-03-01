@@ -213,7 +213,7 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 		} else if strings.HasSuffix(filePath, ".css") {
 			contentType = "text/css"
 		} else if strings.HasSuffix(filePath, ".js") {
-			contentType = "text/js"
+			contentType = "text/javascript; charset=utf-8"
 		} else if strings.HasSuffix(filePath, ".json") {
 			contentType = "application/json"
 		}
