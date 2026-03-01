@@ -42,6 +42,7 @@ func getParams(line string) map[string]string {
 
 func getPathAndParams(line string) (string, map[string]string) {
 	var path string
+	line = strings.NewReplacer("%20", " ").Replace(line)
 	params := make(map[string]string)
 
 	line = line[1:] // To remove the / in the beginning
