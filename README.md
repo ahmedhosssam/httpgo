@@ -10,6 +10,8 @@ go run main.go
 
 The server starts on `localhost:6969`.
 
+Right now the most useful use case for httpgo is to host a web page or SPA (single page application) by serving `index.html` and linking css and js files to it.
+
 ## Examples
 
 ```sh
