@@ -1,0 +1,7 @@
+{
+  "pages": [
+    { "id": 1, "title": "Hello World", "description": "A classic introduction to programming." },
+    { "id": 2, "title": "Say Hello", "description": "A guide on greeting people properly." },
+    { "id": 3, "title": "Hello from the Other Side", "description": "A deep dive into remote communication." }
+  ]
+}
