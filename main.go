@@ -69,7 +69,7 @@ func parseHTTPRequest(req string) HTTPRequest {
 	firstLine := strings.Split(lines[0], " ")
 
 	if len(firstLine) != 3 {
-		fmt.Printf("INVALID HEADER %s\n", firstLine)
+		log.Printf("[WARN] Invalid request line: %s", firstLine)
 	}
 
 	method := firstLine[0]
@@ -103,26 +103,6 @@ func parseHTTPRequest(req string) HTTPRequest {
 
 		httpReq.headers[parts[0]] = parts[1]
 	}
-
-	log.Printf(
-		"\nParsed HTTP Request:\n"+
-			"---\n"+
-			"Method: %s\n"+
-			"Path: %s\n"+
-			"Version: %s\n"+
-			"Content-Type: %s\n"+
-			"Host: %s\n"+
-			"User-Agent: %s\n"+
-			"Body: %s\n"+
-			"---\n",
-		httpReq.method,
-		httpReq.path,
-		httpReq.httpVersion,
-		httpReq.headers["Content-Type"],
-		httpReq.headers["Host"],
-		httpReq.headers["User-Agent"],
-		httpReq.headers["Body"],
-	)
 
 	return httpReq
 }
@@ -167,7 +147,7 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 
 		data, err := os.ReadFile(filePath)
 		if err != nil {
-			fmt.Println("Error: ", err)
+			log.Printf("[ERROR] Failed to read file %s: %v", filePath, err)
 		}
 
 		body := string(data)
@@ -180,7 +160,7 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 				idStr := httpReq.params["page"]
 				id, err := strconv.Atoi(idStr)
 				if err != nil {
-					fmt.Println("Error: ", err)
+					log.Printf("[ERROR] Invalid page param %q: %v", idStr, err)
 				}
 
 				// TODO: Send an "Invalid Request" reponse if the id is bigger than the length of the array
@@ -196,13 +176,13 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 						// NOTE: All JSON numbers in go become float64
 						newBody += fmt.Sprintf(`"%s": "%s",`, key, strconv.Itoa(int(v)))
 					default:
-						fmt.Printf("unknown type: %T\n", v)
+						log.Printf("[WARN] Unknown JSON type: %T", v)
 					}
 				}
 
 				newBody = newBody[:len(newBody)-1] + "}\n"
 
-				fmt.Println(newBody)
+				log.Printf("[DEBUG] Response body: %s", newBody)
 				body = newBody
 			}
 		}
@@ -235,7 +215,7 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 		// TODO: Better file handling
 		file, err := os.Create(filePath)
 		if err != nil {
-			fmt.Println("Error: ", err)
+			log.Printf("[ERROR] Failed to create file %s: %v", filePath, err)
 		}
 		defer file.Close()
 
@@ -247,14 +227,14 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 		} else {
 			err = json.Unmarshal([]byte(body), &result)
 			if err != nil {
-				fmt.Println(err)
+				log.Printf("[ERROR] Failed to parse JSON body: %v", err)
 			}
 		}
 
 		encoder := json.NewEncoder(file)
 		err = encoder.Encode(result)
 		if err != nil {
-			fmt.Println(err)
+			log.Printf("[ERROR] Failed to encode JSON: %v", err)
 		}
 
 		return HTTPResponse{
@@ -297,7 +277,7 @@ func getRawHTTPResponse(httpRes HTTPResponse) string {
 }
 
 func handleTCPConnection(connection net.Conn) {
-	fmt.Printf("Serving %s\n", connection.RemoteAddr().String())
+	log.Printf("[INFO] New connection from %s", connection.RemoteAddr().String())
 	buffer := make([]byte, 4096)
 	defer connection.Close()
 	for {
@@ -306,14 +286,14 @@ func handleTCPConnection(connection net.Conn) {
 		if strings.Contains(rawRequest, "HTTP") {
 			httpReq := parseHTTPRequest(rawRequest)
 			httpRes := handleHTTPRequest(httpReq)
+			log.Printf("[INFO] %s /%s -> %s", httpReq.method, httpReq.path, httpRes.statusCode)
 			httpResRaw := getRawHTTPResponse(httpRes)
-			response := fmt.Sprintf(httpResRaw)
-			connection.Write([]byte(response))
+			connection.Write([]byte(httpResRaw))
 		}
 
 		if err != nil {
 			if err != io.EOF {
-				fmt.Println("read error:", err)
+				log.Printf("[ERROR] Read error: %v", err)
 			}
 			break
 		}
@@ -322,18 +302,18 @@ func handleTCPConnection(connection net.Conn) {
 
 func main() {
 	addr := "localhost:6969"
-	fmt.Printf("Listening on %s\n", addr)
+	log.Printf("[INFO] Listening on %s", addr)
 
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[FATAL] Failed to listen: %v", err)
 	}
 	defer listener.Close()
 
 	for {
 		connection, err := listener.Accept()
 		if err != nil {
-			fmt.Println(err)
+			log.Printf("[ERROR] Failed to accept connection: %v", err)
 			return
 		}
 		go handleTCPConnection(connection)
