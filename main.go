@@ -111,12 +111,16 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 	method := httpReq.method
 	path := httpReq.path
 	badRequestBody := `{"error":"Bad Request"}`
-	isDir := false
 	notFoundHTML := "<h1>404 Not Found</h1>"
 
 	var filePath string
 	pathInfo, err := os.Stat(path)
-	if err != nil && len(path) > 0 {
+
+	if !strings.Contains(path, ".") && !strings.HasSuffix(path, "/") {
+		path = path + "/"
+	}
+
+	if err != nil && len(path) > 0 && path != "/" {
 		headers := map[string]string{
 			"Content-Type":   "text/html",
 			"Content-Length": strconv.Itoa(len(string(notFoundHTML))),
@@ -131,14 +135,30 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 		}
 	}
 
-	if len(path) > 0 && os.IsNotExist(err) && pathInfo.IsDir() {
-		isDir = true
+	isDir := len(path) > 0 && pathInfo != nil && pathInfo.IsDir()
+	if isDir {
 		path = strings.TrimSuffix(path, "/")
 		filePath = fmt.Sprintf("%v/%v", path, "index.html")
+
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			headers := map[string]string{
+				"Content-Type":   "text/html",
+				"Content-Length": strconv.Itoa(len(string(notFoundHTML))),
+				"Connection":     "keep-alive",
+			}
+
+			return HTTPResponse{
+				httpVersion:  "HTTP/1.1",
+				statusCode:   "403",
+				reasonPhrase: "Forbidden",
+				headers:      headers,
+				body:         string(notFoundHTML),
+			}
+		}
 	}
 
 	if !isDir {
-		if path == "" {
+		if path == "" || path == "/" {
 			filePath = "index.html"
 		} else if !strings.Contains(path, ".") {
 			// If the path doesn't have extension, we will treat it as json file.
