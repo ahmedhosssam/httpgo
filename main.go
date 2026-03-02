@@ -111,17 +111,43 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 	method := httpReq.method
 	path := httpReq.path
 	badRequestBody := `{"error":"Bad Request"}`
+	isDir := false
+	notFoundHTML := "<h1>404 Not Found</h1>"
 
 	var filePath string
-	if path == "" {
-		filePath = "index.html"
-	} else if !strings.Contains(path, ".") {
-		// If the path doesn't have extension, we will treat it as json file.
-		filePath = strings.Split(path, ".json")[0] + ".json"
-	} else if path == "/" {
-		filePath = "index.html"
-	} else {
-		filePath = path
+	pathInfo, err := os.Stat(path)
+	if err != nil && len(path) > 0 {
+		headers := map[string]string{
+			"Content-Type":   "text/html",
+			"Content-Length": strconv.Itoa(len(string(notFoundHTML))),
+			"Connection":     "keep-alive",
+		}
+		return HTTPResponse{
+			httpVersion:  "HTTP/1.1",
+			statusCode:   "404",
+			reasonPhrase: "Not Found",
+			headers:      headers,
+			body:         string(notFoundHTML),
+		}
+	}
+
+	if len(path) > 0 && os.IsNotExist(err) && pathInfo.IsDir() {
+		isDir = true
+		path = strings.TrimSuffix(path, "/")
+		filePath = fmt.Sprintf("%v/%v", path, "index.html")
+	}
+
+	if !isDir {
+		if path == "" {
+			filePath = "index.html"
+		} else if !strings.Contains(path, ".") {
+			// If the path doesn't have extension, we will treat it as json file.
+			filePath = strings.Split(path, ".json")[0] + ".json"
+		} else if path == "/" {
+			filePath = "index.html"
+		} else {
+			filePath = path
+		}
 	}
 
 	if method == "GET" {
@@ -129,7 +155,6 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 		_, err := os.Stat(filePath)
 		if os.IsNotExist(err) {
 			// handle the response
-			notFoundHTML := "<h1>404 Not Found</h1>"
 			headers := map[string]string{
 				"Content-Type":   "text/html",
 				"Content-Length": strconv.Itoa(len(string(notFoundHTML))),
@@ -188,6 +213,10 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 		}
 
 		var contentType string
+		statusCode := "200"
+		if isDir {
+			statusCode = "301"
+		}
 		if strings.HasSuffix(filePath, ".html") {
 			contentType = "text/html"
 		} else if strings.HasSuffix(filePath, ".css") {
@@ -200,7 +229,7 @@ func handleHTTPRequest(httpReq HTTPRequest) HTTPResponse {
 
 		return HTTPResponse{
 			httpVersion:  "HTTP/1.1",
-			statusCode:   "200",
+			statusCode:   statusCode,
 			reasonPhrase: "OK",
 			headers: map[string]string{
 				"Content-Type":   contentType,
